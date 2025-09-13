@@ -37,68 +37,33 @@ Projet développé pour le hackathon Mistral AI MCP - Focus sur l'impact environ
 
 ## Exemple technique
 
-### Analyse de repo
-
-Utilisateur dans Le Chat: "Analyse mon repo https://github.com/user/project pour l'optimisation énergétique"
+Utilisateur dans Le Chat: "Analyse mon repo https://github.com/user/project"
 
 ↓
 
-Le Chat → WebSocket /mcp → handle_mcp_request()
-   method: "tools/call"
-   tool: "analyze_repository" 
-   args: {repo_url: "https://github.com/user/project"}
+Le Chat (GitHub déjà connecté) → HTTP → votre serveur MCP exposé via ngrok
 
 ↓
 
-EcoOptimizerHandler.analyze_repository(repo_url)
-   ├── GitHubClient.get_repository_info(repo_url)
-   ├── GitHubClient.get_source_files(repo_url, [".py", ".js"])
-   ├── SonarQubeClient.trigger_analysis(project_key)
-   ├── DependencyTrackClient.upload_bom(project_uuid, bom)
-   └── CodeOptimizer.analyze_complexity(source_files)
+@mcp.tool analyze_repository(repo_url)
+   ├── SonarQubeClient.trigger_analysis() 
+   ├── DependencyTrackClient.analyze_repository()
+   └── Retourne analysis_id = "eco_20240913_143022"
 
 ↓
 
-Génère analysis_id = "eco_analysis_12345"
-   Stocke: {files, metrics, sonar_data, deps_data}
+"Calcule les métriques énergétiques"
 
 ↓
 
-Retour Le Chat: "Analyse terminée. ID: eco_analysis_12345
-   - 45 fichiers Python analysés
-   - Complexité moyenne: 8.3
-   - 12 dépendances obsolètes détectées"
-
-
-### Proposition d'optimisation
-
-Utilisateur: "Propose des optimisations pour cette analyse"
+@mcp.tool get_energy_metrics(analysis_id)
+   └── Retourne {"energy_score": 72.3, "co2_estimate_kg": 2.77, "cost_estimate_eur": 69.25}
 
 ↓
 
-Le Chat → tools/call → "suggest_optimizations"
-   args: {analysis_id: "eco_analysis_12345"}
+"Propose des optimisations"
 
 ↓
 
-EcoOptimizerHandler.suggest_optimizations(analysis_id)
-   ├── Récupère les données stockées (files, metrics)
-   ├── EnergyMetrics.calculate_energy_score(complexity, deps)
-   ├── SearchClient.search_energy_practices("python", "optimization")
-   └── Appel API Mistral avec prompt enrichi:
-       "Code: {...}, Métriques: {...}, Bonnes pratiques: {...}
-        Propose 3 optimisations énergétiques concrètes"
-
-↓
-
-Retour Le Chat: 
-   "Optimisations énergétiques suggérées:
-   
-   1. **Remplacer les boucles nested** (ligne 45-67)
-      → List comprehension → -23% CPU
-   
-   2. **Éliminer pandas pour les petits datasets** 
-      → Native Python → -40% mémoire
-      
-   3. **Upgrader requests → httpx**
-      → HTTP/2 async → -15% réseau"
+@mcp.tool suggest_optimizations(analysis_id)
+   └── Le Chat/Mistral traite le contexte → suggestions intelligentes

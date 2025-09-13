@@ -1,16 +1,16 @@
 class DependencyTrackClient:
     def __init__(self):
-        self.base_url = None
-        self.api_key = None
+        self.base_url = os.getenv("DEPENDENCY_TRACK_URL")
+        self.api_key = os.getenv("DEPENDENCY_TRACK_KEY")
         
-    async def upload_bom(self, project_uuid: str, bom_content: str):
-        """Upload d'un SBOM pour analyse"""
+    async def analyze_repository(self, repo_url: str):
+        """Lance analyse des dépendances"""
         pass
     
-    async def get_vulnerabilities(self, project_uuid: str):
-        """Récupère les vulnérabilités"""
+    async def get_vulnerabilities(self, analysis_id: str):
+        """Récupère vulnérabilités"""
         pass
     
-    async def get_outdated_dependencies(self, project_uuid: str):
-        """Récupère les dépendances obsolètes"""
+    async def get_full_audit(self, analysis_id: str):
+        """Audit complet des dépendances"""
         pass
