@@ -8,19 +8,7 @@ from typing import List, Dict, Optional
 from enum import Enum
 import mcp.types as types
 
-# Imports des services
-# from services.dependency_track.service import DependencyTrackService
-# from services.sonarqube.service import SonarQubeService
-# from services.codeclimate.service import CodeClimateService
-# from services.lighthouse.service import LighthouseService
-# from services.bundle_analyzer.service import BundleAnalyzerService
-# from services.carbon_calculator.service import CarbonCalculatorService
-# from services.git_analyzer.service import GitAnalyzerService
-
-# Imports des outils
-# from tools.github_tools import GitHubAnalyzer
-# from tools.analysis_tools import CodeAnalyzer
-# from tools.optimization_tools import CodeOptimizer
+from services.sonarqube.api import submit_code
 
 mcp = FastMCP("EcoCode Analyzer", port=3000, stateless_http=True, debug=True)
 
@@ -38,180 +26,85 @@ class ReportFormat(str, Enum):
     MARKDOWN = "markdown"
     HTML = "html"
 
-# === WORKFLOW PRINCIPAL ===
-
 @mcp.tool(
-    title="Analyze Repository Full Workflow",
-    description="Workflow complet d'analyse écologique d'un dépôt"
-)
-def analyze_repository_workflow(
-    github_url: str = Field(description="URL du dépôt GitHub"),
-    branch: str = Field(description="Branche à analyser", default="main"),
-    analysis_types: List[AnalysisType] = Field(description="Types d'analyses à effectuer", default=[AnalysisType.FULL]),
-    report_format: ReportFormat = Field(description="Format du rapport final", default=ReportFormat.MARKDOWN),
-    auto_optimize: bool = Field(description="Appliquer automatiquement les optimisations sûres", default=False)
-) -> str:
-    """Orchestration complète de l'analyse"""
-    pass
-
-@mcp.tool(
-    title="Analyze Code Snippet Full",
-    description="Analyse complète d'un snippet de code"
-)
-def analyze_code_snippet_full(
-    code: str = Field(description="Code à analyser"),
-    language: str = Field(description="Langage (python, javascript, typescript, java, etc.)"),
-    context: Optional[str] = Field(description="Contexte d'usage", default=None),
-    analysis_types: List[AnalysisType] = Field(description="Types d'analyses", default=[AnalysisType.FULL])
-) -> str:
-    """Analyse complète d'un snippet"""
-    pass
-
-# === TOOLS SPÉCIALISÉS PAR SERVICE ===
-
-@mcp.tool(
-    title="Run Dependency Analysis",
-    description="Analyse des dépendances via Dependency Track"
-)
-def run_dependency_analysis(
-    project_name: str = Field(description="Nom du projet"),
-    project_version: str = Field(description="Version du projet", default="1.0.0"),
-    package_file_path: str = Field(description="Chemin vers le fichier de dépendances (requirements.txt, package.json, etc.)"),
-    severity_threshold: str = Field(description="Seuil de sévérité", default="MEDIUM")
-) -> str:
-    """Analyse via Dependency Track"""
-    pass
-
-@mcp.tool(
-    title="Run SonarQube Analysis", 
-    description="Analyse de qualité via SonarQube"
+    title="Submit Code for SonarQube Analysis",
+    description="Soumet un fichier de code à SonarQube et retourne les problèmes détectés"
 )
 def run_sonarqube_analysis(
-    project_key: str = Field(description="Clé unique du projet"),
-    project_name: str = Field(description="Nom du projet"),
-    source_path: str = Field(description="Chemin du code source"),
-    language: str = Field(description="Langage principal", default="auto"),
-    quality_gate: str = Field(description="Quality gate", default="eco_optimized")
-) -> str:
-    """Analyse via SonarQube"""
-    pass
+    code: str = Field(description="Code source à analyser"),
+    filename: str = Field(description="Nom du fichier, ex: bad_code.py"),
+    project_key: str = Field(description="Clé unique du projet", default="mcp-project")
+) -> Dict:
+    return submit_code(code, filename, project_key)
 
-@mcp.tool(
-    title="Run CodeClimate Analysis",
-    description="Analyse de maintenabilité via CodeClimate"
-)
-def run_codeclimate_analysis(
-    repo_path: str = Field(description="Chemin du dépôt local"),
-    config_file: Optional[str] = Field(description="Fichier de config CodeClimate", default=None),
-    engines: List[str] = Field(description="Moteurs à utiliser", default=["duplication", "fixme"])
-) -> str:
-    """Analyse via CodeClimate"""
-    pass
-
-@mcp.tool(
-    title="Run Lighthouse Analysis",
-    description="Analyse de performance web via Lighthouse"
-)
-def run_lighthouse_analysis(
-    url: str = Field(description="URL à analyser"),
-    device: str = Field(description="Type d'appareil", default="desktop"),
-    categories: List[str] = Field(description="Catégories à analyser", default=["performance", "best-practices"]),
-    output_format: str = Field(description="Format de sortie", default="json")
-) -> str:
-    """Analyse via Lighthouse"""
-    pass
-
-@mcp.tool(
-    title="Analyze Bundle Size",
-    description="Analyse de la taille des bundles JavaScript/TypeScript"
-)
-def analyze_bundle_size(
-    build_path: str = Field(description="Chemin du build"),
-    framework: str = Field(description="Framework utilisé (react, vue, angular, vanilla)", default="auto"),
-    threshold_mb: float = Field(description="Seuil d'alerte en MB", default=1.0)
-) -> str:
-    """Analyse des bundles"""
-    pass
-
-@mcp.tool(
-    title="Calculate Carbon Footprint",
-    description="Calcul de l'empreinte carbone du code"
-)
-def calculate_carbon_footprint(
-    analysis_results: Dict = Field(description="Résultats des analyses précédentes"),
-    execution_frequency: int = Field(description="Exécutions par jour", default=1000),
-    server_location: str = Field(description="Localisation serveur", default="EU"),
-    user_base: int = Field(description="Nombre d'utilisateurs", default=1000)
-) -> str:
-    """Calcul d'empreinte carbone"""
-    pass
-
-@mcp.tool(
-    title="Get Optimization Suggestions",
-    description="Suggestions d'optimisation basées sur toutes les analyses"
-)
-def get_optimization_suggestions(
-    analysis_id: str = Field(description="ID de l'analyse globale"),
-    priority_level: str = Field(description="Niveau de priorité (critical, high, medium, low)", default="high"),
-    auto_applicable: bool = Field(description="Seulement les optimisations auto-applicables", default=False)
-) -> str:
-    """Suggestions d'optimisation consolidées"""
-    pass
-
-# === RESOURCES ===
-
-@mcp.resource(
-    uri="analysis://{analysis_id}/full-report",
-    description="Rapport complet d'analyse écologique",
-    name="Full Analysis Report"
-)
-def get_full_analysis_report(analysis_id: str) -> str:
-    """Rapport d'analyse complet"""
-    pass
-
-@mcp.resource(
-    uri="service://{service_name}/status",
-    description="Status d'un service spécifique",
-    name="Service Status"
-)
-def get_service_status(service_name: str) -> str:
-    """Status d'un service"""
-    pass
-
-@mcp.resource(
-    uri="optimization://{optimization_id}/details",
-    description="Détails d'une optimisation spécifique",
-    name="Optimization Details"
-)
-def get_optimization_details(optimization_id: str) -> str:
-    """Détails d'optimisation"""
-    pass
-
-# === PROMPTS ===
-
-@mcp.prompt("eco_analysis_workflow")
-def eco_analysis_workflow_prompt(
-    project_type: str = Field(description="Type de projet (web, api, cli, mobile)"),
-    target_metrics: List[str] = Field(description="Métriques cibles", default=["energy", "carbon", "performance"]),
-    constraints: Optional[str] = Field(description="Contraintes spécifiques", default=None)
-) -> str:
-    """Prompt pour workflow d'analyse écologique"""
-    metrics = ", ".join(target_metrics)
-    constraints_text = f"\nContraintes: {constraints}" if constraints else ""
-    
-    return f"""
-Effectuez une analyse écologique complète pour un projet {project_type}.
-Métriques prioritaires: {metrics}{constraints_text}
-
-Workflow recommandé:
-1. Analyse statique du code (SonarQube)
-2. Audit des dépendances (Dependency Track)
-3. Analyse des performances (Lighthouse si web)
-4. Calcul d'empreinte carbone
-5. Suggestions d'optimisation
-6. Rapport consolidé
-
-Fournissez des recommandations actionnables et des métriques précises.
+@mcp.prompt("Analyse de repo github")
+def github_analyse_prompt():
+    return """
+You are an automated code auditor. Your primary goal is to analyze a GitHub repository to detect **computational complexity issues**, identify hotspots, and produce a structured and prioritized efficiency report.
+### Instructions
+1. **Repository Access**
+   - Connect to the given GitHub repository via GitHub.
+   - Parse the repository contents.
+2. **Libraries and Dependencies**
+   - Identify all external libraries and their versions.
+   - Check across `requirements.txt`, `setup.py`, `pyproject.toml`, `package.json`, or other language-specific dependency files.
+   - Also scan the code directly for library usage.
+   - For each library, report:
+     - Version (if specified)
+     - Frequency of usage in the repository
+   - Rank libraries by frequency of usage.
+3. **Intra-Repository Imports**
+   - Detect imports of internal modules and scripts dynamically within the repository.
+   - Report which internal scripts or modules are used the most.
+   - Rank them based on frequency of usage.
+4. **Computational Complexity & Code Efficiency Improvements**
+   - Perform static analysis to detect parts of the code with high computational cost, with emphasis on:
+     - Nested loops (O(n²), O(n³), etc.)
+     - Deep recursion and potential stack overflows
+     - Heavy data structure operations (e.g., repeated list scans, inefficient sorts, unnecessary recomputations)
+     - Excessive I/O inside loops causing CPU or memory strain
+   - For each identified case, estimate the complexity class and assess its potential impact.
+   - Where applicable, suggest optimizations or existing library functions that provide more efficient alternatives.
+   - Rank recommended improvements by priority (High, Medium, Low) based on operation frequency and risk of performance degradation.
+5. **Potential Bottlenecks**
+   - Identify functions, scripts, or modules that are invoked frequently and may become runtime bottlenecks.
+   - Highlight code components that concentrate too many calls, computations, or dependencies.
+   - Cross-reference bottlenecks with complexity analysis to highlight *critical inefficiencies*.
+   - Rank bottlenecks by risk level (High, Medium, Low).
+6. **Output Report**
+   - Return results in **Markdown format**.
+   - Divide the report into the following sections:
+     - Dependencies and Libraries
+     - Internal Code Usage
+     - Complexity Analysis and Efficiency Opportunities
+     - Bottlenecks and Hotspots
+   - Inside each section, findings should be **ranked and numbered by priority**.
+   - Make the Markdown structured and readable for both humans and LLMs.
+---
+### Structure Examples (Tables for Each Section)
+#### Dependencies and Libraries
+| Rank | Library | Version | Frequency of Usage | Notes |
+|------|----------|---------|--------------------|-------|
+| 1    | numpy    | 1.22.0  | 15 files           | Core dependency |
+| 2    | pandas   | 1.4.2   | 10 files           | Data processing |
+---
+#### Internal Code Usage
+| Rank | Module/Script         | Import Frequency | Notes |
+|------|-----------------------|------------------|-------|
+| 1    | utils/data_loader.py  | 8 imports        | Centralized data handling |
+| 2    | core/parser.py        | 5 imports        | Tightly coupled with `main.py` |
+---
+#### Complexity Analysis and Efficiency Opportunities
+| Rank | File & Function        | Operation Detected | Est. Complexity | Recommended Optimization | Priority |
+|------|------------------------|-------------------|-----------------|--------------------------|----------|
+| 1    | core/search.py → brute_force_search() | Nested loops | O(n²) | Replace with set/dict lookup | High |
+| 2    | utils/sorting.py → custom_sort() | Bubble sort | O(n²) | Use built-in `sort()` | High |
+---
+#### Bottlenecks and Hotspots
+| Rank | File & Function        | Description | Risk Level | Notes |
+|------|------------------------|-------------|------------|-------|
+| 1    | main.py → run_pipeline() | Calls brute_force_search() repeatedly | High | Causes potential O(n³) runtime |
+| 2    | data_loader.py → CSVLoader | Reads disk on every iteration | Medium | Should batch or preload data
 """
 
 if __name__ == "__main__":
