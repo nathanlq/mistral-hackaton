@@ -9,18 +9,18 @@ from enum import Enum
 import mcp.types as types
 
 # Imports des services
-from services.dependency_track.service import DependencyTrackService
-from services.sonarqube.service import SonarQubeService
-from services.codeclimate.service import CodeClimateService
-from services.lighthouse.service import LighthouseService
-from services.bundle_analyzer.service import BundleAnalyzerService
-from services.carbon_calculator.service import CarbonCalculatorService
-from services.git_analyzer.service import GitAnalyzerService
+# from services.dependency_track.service import DependencyTrackService
+# from services.sonarqube.service import SonarQubeService
+# from services.codeclimate.service import CodeClimateService
+# from services.lighthouse.service import LighthouseService
+# from services.bundle_analyzer.service import BundleAnalyzerService
+# from services.carbon_calculator.service import CarbonCalculatorService
+# from services.git_analyzer.service import GitAnalyzerService
 
 # Imports des outils
-from tools.github_tools import GitHubAnalyzer
-from tools.analysis_tools import CodeAnalyzer
-from tools.optimization_tools import CodeOptimizer
+# from tools.github_tools import GitHubAnalyzer
+# from tools.analysis_tools import CodeAnalyzer
+# from tools.optimization_tools import CodeOptimizer
 
 mcp = FastMCP("EcoCode Analyzer", port=3000, stateless_http=True, debug=True)
 
