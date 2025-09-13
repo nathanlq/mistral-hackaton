@@ -18,7 +18,6 @@ async def analyze_carbon_impact(code: str, filename: str = "analysis.py") -> dic
         file_path = temp_path / filename
         file_path.write_text(code)
         
-        # Créer script d'exécution avec tracking
         runner_script = f"""
 from codecarbon import EmissionsTracker
 import sys
@@ -44,12 +43,10 @@ finally:
         runner_path = temp_path / "runner.py"
         runner_path.write_text(runner_script)
         
-        # Exécuter et capturer résultats
         result = subprocess.run([
             "python", str(runner_path)
-        ], capture_output=True, text=True, timeout=30)
+        ], capture_output=True, text=True, timeout=600)
         
-        # Parser résultats codecarbon
         emissions_file = temp_path / "emissions.csv"
         carbon_data = {"emissions_kg": 0, "energy_kwh": 0, "duration_s": 0}
         
@@ -66,7 +63,6 @@ finally:
                     "ram_energy": float(row.get("ram_energy", 0))
                 }
         
-        # Analyse statique de complexité
         complexity_score = analyze_code_complexity(code)
         
         return {
@@ -114,7 +110,6 @@ def analyze_code_complexity(code: str) -> dict:
                 
             def visit_FunctionDef(self, node):
                 nonlocal recursions
-                # Détection basique de récursion
                 for child in ast.walk(node):
                     if isinstance(child, ast.Call) and isinstance(child.func, ast.Name):
                         if child.func.id == node.name:
@@ -154,7 +149,7 @@ def generate_carbon_recommendations(complexity: dict, carbon: dict) -> list:
             "impact": "Optimisation ciblée possible"
         })
         
-    if carbon.get("energy_kwh", 0) > 0.001:  # > 1Wh
+    if carbon.get("energy_kwh", 0) > 0.001:
         recommendations.append({
             "type": "MEDIUM",
             "message": "Consommation énergétique élevée détectée",
@@ -166,21 +161,19 @@ def generate_carbon_recommendations(complexity: dict, carbon: dict) -> list:
 
 async def analyze_github_carbon(repo_url: str) -> dict:
     """Analyse l'impact carbone d'un repo GitHub"""
-    # Clone et analyse des fichiers Python principaux
     import git
     
     with tempfile.TemporaryDirectory() as temp_dir:
         repo_path = Path(temp_dir) / "repo"
         git.Repo.clone_from(repo_url, repo_path)
         
-        # Trouver fichiers Python
         py_files = list(repo_path.rglob("*.py"))
         
         results = []
         total_carbon = {"emissions_kg": 0, "energy_kwh": 0}
         
-        for py_file in py_files[:5]:  # Limite aux 5 premiers
-            if py_file.stat().st_size > 1000000:  # Skip gros fichiers
+        for py_file in py_files[:5]:
+            if py_file.stat().st_size > 1000000:
                 continue
                 
             code = py_file.read_text(encoding='utf-8', errors='ignore')
@@ -218,7 +211,6 @@ async def analyze_carbon_impact(code: str, filename: str = "analysis.py") -> dic
         file_path = temp_path / filename
         file_path.write_text(code)
         
-        # Créer script d'exécution avec tracking
         runner_script = f"""
 from codecarbon import EmissionsTracker
 import sys
@@ -244,12 +236,10 @@ finally:
         runner_path = temp_path / "runner.py"
         runner_path.write_text(runner_script)
         
-        # Exécuter et capturer résultats
         result = subprocess.run([
             "python", str(runner_path)
-        ], capture_output=True, text=True, timeout=30)
+        ], capture_output=True, text=True, timeout=600)
         
-        # Parser résultats codecarbon
         emissions_file = temp_path / "emissions.csv"
         carbon_data = {"emissions_kg": 0, "energy_kwh": 0, "duration_s": 0}
         
@@ -266,7 +256,6 @@ finally:
                     "ram_energy": float(row.get("ram_energy", 0))
                 }
         
-        # Analyse statique de complexité
         complexity_score = analyze_code_complexity(code)
         
         return {
@@ -314,7 +303,6 @@ def analyze_code_complexity(code: str) -> dict:
                 
             def visit_FunctionDef(self, node):
                 nonlocal recursions
-                # Détection basique de récursion
                 for child in ast.walk(node):
                     if isinstance(child, ast.Call) and isinstance(child.func, ast.Name):
                         if child.func.id == node.name:
@@ -354,7 +342,7 @@ def generate_carbon_recommendations(complexity: dict, carbon: dict) -> list:
             "impact": "Optimisation ciblée possible"
         })
         
-    if carbon.get("energy_kwh", 0) > 0.001:  # > 1Wh
+    if carbon.get("energy_kwh", 0) > 0.001:
         recommendations.append({
             "type": "MEDIUM",
             "message": "Consommation énergétique élevée détectée",
@@ -366,21 +354,19 @@ def generate_carbon_recommendations(complexity: dict, carbon: dict) -> list:
 
 async def analyze_github_carbon(repo_url: str) -> dict:
     """Analyse l'impact carbone d'un repo GitHub"""
-    # Clone et analyse des fichiers Python principaux
     import git
     
     with tempfile.TemporaryDirectory() as temp_dir:
         repo_path = Path(temp_dir) / "repo"
         git.Repo.clone_from(repo_url, repo_path)
         
-        # Trouver fichiers Python
         py_files = list(repo_path.rglob("*.py"))
         
         results = []
         total_carbon = {"emissions_kg": 0, "energy_kwh": 0}
         
-        for py_file in py_files[:5]:  # Limite aux 5 premiers
-            if py_file.stat().st_size > 1000000:  # Skip gros fichiers
+        for py_file in py_files[:5]:
+            if py_file.stat().st_size > 1000000:
                 continue
                 
             code = py_file.read_text(encoding='utf-8', errors='ignore')

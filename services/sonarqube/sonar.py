@@ -38,21 +38,12 @@ async def wait_for_task(task_id: str, timeout: int = 300) -> bool:
 def get_sonar_issues(project_key: str) -> Dict:
     """Récupère les issues SonarQube pour un projet"""
     
-    # Règles liées à l'éco-conception et performance
     eco_rules = [
         "python:S1066",  # Complexité cognitive
         "python:S3776",  # Complexité cyclomatique
-        "python:S1854",  # Variables inutilisées
-        "python:S1481",  # Variables locales inutilisées
-        "python:S1192",  # Duplication de chaînes
-        "python:S138",   # Fonctions trop longues
-        "python:S3457",  # Format string inefficace
-        "python:S1845",  # Variables identiques
-        "python:S5852",  # Regex lente
     ]
     
     try:
-        # Récupérer toutes les issues du projet
         response = requests.get(
             f"{SONAR_HOST}/api/issues/search",
             params={
@@ -66,12 +57,10 @@ def get_sonar_issues(project_key: str) -> Dict:
         
         all_issues = response.json()
         
-        # Filtrer les issues éco-responsables
         eco_issues = []
         for issue in all_issues.get("issues", []):
             rule_key = issue.get("rule", "")
             
-            # Vérifier si c'est une règle éco ou si elle contient des mots-clés
             is_eco = (
                 rule_key in eco_rules or
                 any(keyword in issue.get("message", "").lower() 
@@ -109,7 +98,6 @@ def calculate_eco_score(issues_data: Dict) -> Dict:
         message = issue.get("message", "")
         line = issue.get("line", 0)
         
-        # Classification par impact écologique
         if severity in ["BLOCKER", "CRITICAL"]:
             impact = "high"
             impact_count["high"] += 1
@@ -129,7 +117,6 @@ def calculate_eco_score(issues_data: Dict) -> Dict:
             "component": issue.get("component", "")
         })
     
-    # Calcul du score (100 - pénalités)
     total_issues = sum(impact_count.values())
     if total_issues == 0:
         eco_score = 100
