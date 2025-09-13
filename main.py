@@ -24,7 +24,7 @@ class AnalysisType(str, Enum):
     QUALITY = "quality"
     GITHUB = "github"
 
-async def safe_execute(coro, timeout=360):
+async def safe_execute(coro, timeout=600):
     try:
         print(f"⏳ Début de l'exécution (timeout: {timeout}s)...")
         result = await asyncio.wait_for(coro, timeout=timeout)
@@ -114,13 +114,13 @@ async def full_eco_analysis(
 ) -> dict:
     try:
         print("🔍 Début de l'analyse carbone...")
-        carbon_result = await safe_execute(analyze_carbon_impact(code, filename), timeout=180)
+        carbon_result = await safe_execute(analyze_carbon_impact(code, filename), timeout=600)
         print("✅ Analyse carbone terminée.")
 
         quality_result = {}
         if include_sonar:
             print("🔍 Début de l'analyse SonarQube...")
-            quality_result = await safe_execute(submit_code_safe(code, filename), timeout=180)
+            quality_result = await safe_execute(submit_code_safe(code, filename), timeout=600)
             print("✅ Analyse SonarQube terminée.")
 
         print("📊 Calcul du score écologique...")
@@ -227,7 +227,7 @@ if __name__ == "__main__":
     duplicate_code()
     sql_injection_risk()
         """
-    result = await safe_execute(analyze_carbon_impact(code, "test.py"), timeout=360)
+    result = await safe_execute(analyze_carbon_impact(code, "test.py"), timeout=600)
     print("Résultat analyse carbone :", result)
 
 async def test_sonarqube():
@@ -275,12 +275,12 @@ if __name__ == "__main__":
     duplicate_code()
     sql_injection_risk()
 """
-    result = await safe_execute(submit_code_safe(code, "test.py"), timeout=360)
+    result = await safe_execute(submit_code_safe(code, "test.py"), timeout=600)
     print("Résultat SonarQube :", result)
 
 async def test_github():
     repo_url = "https://github.com/psf/requests"  # Exemple de repo
-    result = await safe_execute(analyze_github_carbon(repo_url), timeout=360)
+    result = await safe_execute(analyze_github_carbon(repo_url), timeout=600)
     print("Résultat GitHub :", result)
 
 
