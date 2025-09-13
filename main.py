@@ -7,34 +7,108 @@ from pydantic import Field
 from typing import List, Dict, Optional
 from enum import Enum
 import mcp.types as types
-
-from services.sonarqube.sonar import submit_code
+from services.sonarqube.sonar_analyzer import submit_code_safe
+from services.carbon.carbon_analyzer import analyze_carbon_impact, analyze_github_carbon
+import asyncio
+import json
 
 mcp = FastMCP("EcoCode Analyzer", port=3000, stateless_http=True, debug=True)
 
 class AnalysisType(str, Enum):
-    ENERGY = "energy"
-    PERFORMANCE = "performance"
-    DEPENDENCIES = "dependencies"
-    SECURITY = "security"
-    BUNDLE = "bundle"
+    ENERGY = "energy" 
     CARBON = "carbon"
-    FULL = "full"
+    QUALITY = "quality"
+    GITHUB = "github"
 
-class ReportFormat(str, Enum):
-    JSON = "json"
-    MARKDOWN = "markdown"
-    HTML = "html"
+@mcp.tool(
+    title="Calcul impact carbone code",
+    description="Mesure l'empreinte carbone et énergétique d'un code Python"
+)
+async def carbon_impact_analysis(
+    code: str = Field(description="Code Python à analyser"),
+    filename: str = Field(default="analysis.py", description="Nom du fichier")
+) -> Dict:
+    pass
+
+
+@mcp.tool(
+    title="Analyse GitHub écologique", 
+    description="Analyse l'impact carbone et la complexité d'un repo GitHub"
+)
+async def github_eco_analysis(
+    repo_url: str = Field(description="URL du repository GitHub"),
+    analysis_type: AnalysisType = Field(default=AnalysisType.CARBON, description="Type d'analyse")
+) -> Dict:
+    pass
+
+
+@mcp.tool(
+    title="Analyse complète écologique",
+    description="Combine analyse carbone + qualité code + recommandations"
+)
+async def full_eco_analysis(
+    code: str,
+    filename: str = "analysis.py",
+    include_sonar: bool = True
+) -> dict:
+    pass
+
+
+def calculate_eco_score(carbon_data: dict, quality_data: dict = None) -> dict:
+    """Calcule un score écologique global"""
+    
+    score = 100  # Score de base
+    
+    # Pénalités carbone
+    carbon_impact = carbon_data.get("carbon_impact", {})
+    emissions = carbon_impact.get("emissions_kg", 0)
+    complexity = carbon_data.get("complexity_analysis", {}).get("complexity_score", 0)
+    
+    score -= min(emissions * 10000, 30)  # Max -30 pour carbone
+    score -= min(complexity * 2, 40)     # Max -40 pour complexité
+    
+    # Pénalités qualité
+    if quality_data and "issues" in quality_data:
+        critical_issues = sum(1 for i in quality_data["issues"] if i.get("severity") == "CRITICAL")
+        major_issues = sum(1 for i in quality_data["issues"] if i.get("severity") == "MAJOR")
+        
+        score -= critical_issues * 10  
+        score -= major_issues * 5
+    
+    score = max(0, score)  # Minimum 0
+    
+    # Classification
+    if score >= 80:
+        grade = "A"
+        label = "Excellent"
+    elif score >= 60:
+        grade = "B"  
+        label = "Bon"
+    elif score >= 40:
+        grade = "C"
+        label = "Acceptable"
+    else:
+        grade = "D"
+        label = "Problématique"
+    
+    return {
+        "score": round(score, 1),
+        "grade": grade,
+        "label": label,
+        "emissions_kg": emissions,
+        "complexity_score": complexity
+    }
 
 @mcp.tool(
     title="Submit Code for SonarQube Analysis",
-    description="Soumet un fichier de code à SonarQube et retourne les problèmes détectés"
+    description="Soumet un fichier de code à SonarQube via SSH et retourne les problèmes détectés"
 )
 async def run_sonarqube_analysis(
     code: str = Field(description="Code source à analyser"),
-    timeout=600
+    filename: str = Field(default="analysis.py", description="Nom du fichier")
 ) -> Dict:
-    return await submit_code(code, filename="bad_code.py")
+    pass
+
 
 @mcp.prompt("Analyse de repo github")
 def github_analyse_prompt(lien_repo: str = Field(description="lien d'un repo github à analyser") ):
