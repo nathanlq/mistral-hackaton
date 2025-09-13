@@ -8,7 +8,7 @@ from typing import List, Dict, Optional
 from enum import Enum
 import mcp.types as types
 
-from services.sonarqube.api import submit_code
+from services.sonarqube.sonar import submit_code
 
 mcp = FastMCP("EcoCode Analyzer", port=3000, stateless_http=True, debug=True)
 
@@ -32,10 +32,8 @@ class ReportFormat(str, Enum):
 )
 def run_sonarqube_analysis(
     code: str = Field(description="Code source à analyser"),
-    filename: str = Field(description="Nom du fichier, ex: bad_code.py"),
-    project_key: str = Field(description="Clé unique du projet", default="mcp-project")
 ) -> Dict:
-    return submit_code(code, filename, project_key)
+    return submit_code(code, filename="bad_code.py", project_key="mcp-project")
 
 @mcp.prompt("Analyse de repo github")
 def github_analyse_prompt():

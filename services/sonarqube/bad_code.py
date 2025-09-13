@@ -1,7 +1,3 @@
-# bad_code.py
-# This file intentionally contains many problems to trigger SonarQube rules
-# performance issues, code smells, security smells, and bad practices.
-
 import os
 import sys
 import time
