@@ -4,100 +4,288 @@ Point d'entrée principal qui orchestre tous les services
 """
 from mcp.server.fastmcp import FastMCP
 from pydantic import Field
-from typing import List, Dict, Optional
+from typing import Dict, Optional, List
 from enum import Enum
+import asyncio
+import json
+from services.sonarqube.sonar_analyzer import submit_code_safe
+from services.carbon.carbon_analyzer import analyze_carbon_impact, analyze_github_carbon
 import mcp.types as types
 
-from services.sonarqube.sonar import submit_code
-
-mcp = FastMCP("EcoCode Analyzer", port=3000, stateless_http=True, debug=True)
+mcp = FastMCP(
+    "EcoCode Analyzer",
+    port=3000,
+    stateless_http=True
+)
 
 class AnalysisType(str, Enum):
     ENERGY = "energy"
-    PERFORMANCE = "performance"
-    DEPENDENCIES = "dependencies"
-    SECURITY = "security"
-    BUNDLE = "bundle"
     CARBON = "carbon"
-    FULL = "full"
+    QUALITY = "quality"
+    GITHUB = "github"
 
-class ReportFormat(str, Enum):
-    JSON = "json"
-    MARKDOWN = "markdown"
-    HTML = "html"
+async def safe_execute(coro, timeout=600):
+    try:
+        print(f"⏳ Début de l'exécution (timeout: {timeout}s)...")
+        result = await asyncio.wait_for(coro, timeout=timeout)
+        print("✅ Exécution terminée.")
+        return result
+    except asyncio.TimeoutError:
+        print("⏰ Timeout atteint !")
+        return {"status": "error", "message": "Timeout lors de l'exécution de la tâche."}
+    except Exception as e:
+        print(f"❌ Erreur : {str(e)}")
+        return {"status": "error", "message": f"Erreur : {str(e)}"}
+
+def calculate_eco_score(carbon_data: dict, quality_data: dict = None) -> dict:
+    """Calcule un score écologique global."""
+    score = 100  # Score de base
+
+    # Pénalités carbone
+    carbon_impact = carbon_data.get("carbon_impact", {})
+    emissions = carbon_impact.get("emissions_kg", 0)
+    complexity = carbon_data.get("complexity_analysis", {}).get("complexity_score", 0)
+
+    score -= min(emissions * 10000, 30)  # Max -30 pour carbone
+    score -= min(complexity * 2, 40)      # Max -40 pour complexité
+
+    # Pénalités qualité
+    if quality_data and "issues" in quality_data:
+        critical_issues = sum(1 for issue in quality_data["issues"] if issue.get("severity") == "CRITICAL")
+        major_issues = sum(1 for issue in quality_data["issues"] if issue.get("severity") == "MAJOR")
+
+        score -= critical_issues * 10
+        score -= major_issues * 5
+
+    score = max(0, score)  # Minimum 0
+
+    # Classification
+    if score >= 80:
+        grade = "A"
+        label = "Excellent"
+    elif score >= 60:
+        grade = "B"
+        label = "Bon"
+    elif score >= 40:
+        grade = "C"
+        label = "Acceptable"
+    else:
+        grade = "D"
+        label = "Problématique"
+
+    return {
+        "score": round(score, 1),
+        "grade": grade,
+        "label": label,
+        "emissions_kg": emissions,
+        "complexity_score": complexity,
+        "critical_issues": critical_issues,
+        "major_issues": major_issues,
+    }
+
+@mcp.tool(
+    title="Calcul impact carbone code",
+    description="Mesure l'empreinte carbone et énergétique d'un code Python",
+)
+async def carbon_impact_analysis(
+    code: str = Field(description="Code Python à analyser"),
+    filename: str = Field(default="analysis.py", description="Nom du fichier"),
+) -> Dict:
+    try:
+        result = await safe_execute(analyze_carbon_impact(code, filename))
+        return {
+            "status": "success",
+            "data": result,
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Erreur lors de l'analyse carbone : {str(e)}",
+        }
+
+@mcp.tool(
+    title="Analyse complète écologique",
+    description="Combine analyse carbone + qualité code + recommandations",
+)
+async def full_eco_analysis(
+    code: str,
+    filename: str = "analysis.py",
+    include_sonar: bool = True,
+) -> dict:
+    try:
+        print("🔍 Début de l'analyse carbone...")
+        carbon_result = await safe_execute(analyze_carbon_impact(code, filename), timeout=600)
+        print("✅ Analyse carbone terminée.")
+
+        quality_result = {}
+        if include_sonar:
+            print("🔍 Début de l'analyse SonarQube...")
+            quality_result = await safe_execute(submit_code_safe(code, filename), timeout=600)
+            print("✅ Analyse SonarQube terminée.")
+
+        print("📊 Calcul du score écologique...")
+        eco_score = calculate_eco_score(carbon_result, quality_result)
+        print("✅ Score écologique calculé.")
+
+        return {
+            "status": "success",
+            "carbon_analysis": carbon_result,
+            "quality_analysis": quality_result,
+            "eco_score": eco_score,
+        }
+    except Exception as e:
+        print(f"❌ Erreur : {str(e)}")
+        return {
+            "status": "error",
+            "message": f"Erreur lors de l'analyse complète : {str(e)}",
+        }
+
+@mcp.tool(
+    title="Analyse impact carbone GitHub",
+    description="Analyse l'impact carbone des fichiers Python d'un repo GitHub",
+)
+async def github_carbon_analysis(repo_url):
+    try:
+        print(f"🔍 Début de l'analyse GitHub pour {repo_url}...")
+        result = await safe_execute(analyze_github_carbon(repo_url), timeout=600)
+        print("✅ Analyse GitHub terminée.")
+        return {
+            "status": "success",
+            "data": result,
+        }
+    except Exception as e:
+        print(f"❌ Erreur lors de l'analyse GitHub : {str(e)}")
+        return {
+            "status": "error",
+            "message": f"Erreur lors de l'analyse GitHub : {str(e)}",
+        }
+
 
 @mcp.tool(
     title="Submit Code for SonarQube Analysis",
-    description="Soumet un fichier de code à SonarQube et retourne les problèmes détectés"
+    description="Soumet un fichier de code à SonarQube via SSH et retourne les problèmes détectés",
 )
 async def run_sonarqube_analysis(
     code: str = Field(description="Code source à analyser"),
-    timeout=600
+    filename: str = Field(default="analysis.py", description="Nom du fichier"),
 ) -> Dict:
-    return await submit_code(code, filename="bad_code.py")
+    try:
+        result = await  safe_execute(submit_code_safe(code, filename))
+        return {
+            "status": "success",
+            "data": result,
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Erreur lors de l'analyse SonarQube : {str(e)}",
+        }
 
-@mcp.prompt("Analyse de repo github")
-def github_analyse_prompt(lien_repo: str = Field(description="lien d'un repo github à analyser") ):
-    return f"""
-    You are an automated code auditor. Your primary goal is to analyze a GitHub repository to detect **computational complexity issues**, identify hotspots, and produce a structured and prioritized efficiency report on Python code.  
-### Instructions  
-0. **Extraction of the github repositery**
-   - The github repository is located in this prompt  "Hello, I want you to analyse this github project {lien_repo}". Extract it and use it for the next operations
-1. **Repository Access**  
-   - Connect to the given GitHub repository via Github 
-   - Parse the repository contents (only the Python code), and locate the main file/function. 
-2. **Libraries and Dependencies**  
-   - Identify all external libraries and their versions.  
-   - Check across `requirements.txt`, `setup.py`, `pyproject.toml`, etc.  
-   - Also scan the code directly for library usage.  
-   - For each library, report:  
-     - Version (if specified)  
-     - Frequency of usage in the repository  
-   - Rank libraries by frequency of usage.  
-3. **Intra-Repository Imports**  
-   - Detect imports of internal modules and scripts dynamically within the repository.  
-   - Report which internal scripts or modules are used the most.  
-4. **Computational Complexity & Code Efficiency Improvements**  
-   - Perform static analysis to detect parts of the code with high computational cost on the most called file, with emphasis on:  
-     - Nested loops (O(n²), O(n³), etc.)  
-     - Deep recursion and potential stack overflows  
-     - Heavy data structure operations (e.g., repeated list scans, inefficient sorts, unnecessary recomputations)  
-     - Excessive I/O inside loops causing CPU or memory strain  
-   - For each identified case, estimate the complexity class and assess its potential impact.  
-   - Where applicable, suggest optimizations or existing library functions that provide more efficient alternatives.  
-   - Rank recommended improvements by priority (High, Medium, Low) based on operation frequency and risk of performance degradation.  
-6. **Output Report**  
-   - Return results in **Markdown format**.  
-   - Divide the report into the following sections:  
-     - Dependencies and Libraries  
-     - Internal Code Usage  
-     - Complexity Analysis and Efficiency Opportunities  
-     - Bottlenecks and Hotspots  
-   - Inside each section, findings should be **ranked and numbered by priority**.  
-   - Make the Markdown structured and readable for both humans and LLMs.  
----
-### Structure Examples (Tables for Each Section)
-#### Dependencies and Libraries
-| Rank | Library | Version | Frequency of Usage | Notes |
-|------|----------|---------|--------------------|-------|
-| 1    | numpy    | 1.22.0  | 15 files           | Core dependency |
-| 2    | pandas   | 1.4.2   | 10 files           | Data processing |
----
-#### Internal Code Usage
-| Rank | Module/Script         | Import Frequency | Notes |
-|------|-----------------------|------------------|-------|
-| 1    | utils/data_loader.py  | 8 imports        | Centralized data handling |
-| 2    | core/parser.py        | 5 imports        | Tightly coupled with `main.py` |
----
-Most used file :
-#### Complexity Analysis and Efficiency Opportunities
-| Rank  | Function      | Operation Detected | Est. Complexity | Recommended Optimization | Priority |
-|------|------------------------|-------------------|-----------------|--------------------------|----------|
-| 1    |  brute_force_search() | Nested loops | O(n²) | Replace with set/dict lookup | High |
-| 2    | custom_sort() | Bubble sort | O(n²) | Use built-in `sort()` | High |
 
-Don't add any more comments than wanted. Be concise.
-"""
+async def test_carbon_impact():
+    code = """
+import os
+import subprocess
+
+def bad_security_practice():
+    user_input = input("Enter filename: ")
+    os.system(f"cat {user_input}")
+    
+def poor_code_quality():
+    unused_var = "this is never used"
+    x = 1
+    y = 2
+    z = 3
+    if x > 0:
+        if y > 0:
+            if z > 0:
+                print("nested conditions")
+            else:
+                print("z negative")
+        else:
+            print("y negative") 
+    else:
+        print("x negative")
+        
+def duplicate_code():
+    data = []
+    for i in range(10):
+        data.append(i * 2)
+    more_data = []
+    for i in range(10):
+        more_data.append(i * 2)
+    return data, more_data
+
+def sql_injection_risk():
+    user_id = input("User ID: ")
+    query = f"SELECT * FROM users WHERE id = {user_id}"
+    return query
 
 if __name__ == "__main__":
+    bad_security_practice()
+    poor_code_quality() 
+    duplicate_code()
+    sql_injection_risk()
+        """
+    result = await safe_execute(analyze_carbon_impact(code, "test.py"), timeout=600)
+    print("Résultat analyse carbone :", result)
+
+async def test_sonarqube():
+    code = """
+import os
+import subprocess
+
+def bad_security_practice():
+    user_input = input("Enter filename: ")
+    os.system(f"cat {user_input}")
+    
+def poor_code_quality():
+    unused_var = "this is never used"
+    x = 1
+    y = 2
+    z = 3
+    if x > 0:
+        if y > 0:
+            if z > 0:
+                print("nested conditions")
+            else:
+                print("z negative")
+        else:
+            print("y negative") 
+    else:
+        print("x negative")
+        
+def duplicate_code():
+    data = []
+    for i in range(10):
+        data.append(i * 2)
+    more_data = []
+    for i in range(10):
+        more_data.append(i * 2)
+    return data, more_data
+
+def sql_injection_risk():
+    user_id = input("User ID: ")
+    query = f"SELECT * FROM users WHERE id = {user_id}"
+    return query
+
+if __name__ == "__main__":
+    bad_security_practice()
+    poor_code_quality() 
+    duplicate_code()
+    sql_injection_risk()
+"""
+    result = await safe_execute(submit_code_safe(code, "test.py"), timeout=600)
+    print("Résultat SonarQube :", result)
+
+async def test_github():
+    repo_url = "https://github.com/psf/requests"  # Exemple de repo
+    result = await safe_execute(analyze_github_carbon(repo_url), timeout=600)
+    print("Résultat GitHub :", result)
+
+
+if __name__ == "__main__":
+    # asyncio.run(test_carbon_impact())
+    # asyncio.run(test_sonarqube())
+    # asyncio.run(test_github())
     mcp.run(transport="streamable-http")
