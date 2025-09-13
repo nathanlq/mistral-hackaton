@@ -1,0 +1,9 @@
+I will give you a prompt from a user, and I will need you to find the link to the github repositery. If you find it, print just the link to the repositery. If you don't, print "None".
+Examples :
+"Hello ! I want you to analyse the code from this repositery https://github.com/user/cool_project" -> "https://github.com/user/cool_project"
+"analyse this project mynameis/project" -> "https://github.com/mynameis/project"
+"Hello ! Can you please analyse my project ?" -> "None"
+
+Never say anything else than the repositery link or "None". If there many instances, take the first one.
+
+The prompt is :
