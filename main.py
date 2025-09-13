@@ -33,7 +33,7 @@ class ReportFormat(str, Enum):
 def run_sonarqube_analysis(
     code: str = Field(description="Code source à analyser"),
 ) -> Dict:
-    return submit_code(code, filename="bad_code.py", project_key="mcp-project")
+    return submit_code(code, filename="bad_code.py")
 
 @mcp.prompt("Analyse de repo github")
 def github_analyse_prompt():
