@@ -2,6 +2,11 @@ import os
 import requests
 import json
 import shutil
+from dotenv import load_dotenv
+
+load_dotenv()
+
+mistral_api_key = os.getenv("MISTRAL_API_KEY")
 
 
 analyse_prompt = lambda all_codes:f"""Here are the codes of a repositery : 
@@ -109,7 +114,7 @@ def curl_response(prompt):
     url= "https://api.mistral.ai/v1/chat/completions"
     headers = {
         "Content-Type": "application/json", 
-        "Authorization": f"Bearer {os.environ['MISTRAL_API_KEY']}"
+        "Authorization": f"Bearer {mistral_api_key}"
     }
     payload = json.dumps({
         "model": "mistral-large-latest", 

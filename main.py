@@ -11,6 +11,8 @@ import json
 from services.sonarqube.sonar_analyzer import submit_code_safe
 from services.carbon.carbon_analyzer import analyze_carbon_impact, analyze_github_carbon
 import mcp.types as types
+from services.github.main import all_together
+from services.codeclimate.json_errors import main as qlty_metrics
 
 mcp = FastMCP(
     "EcoCode Analyzer",
@@ -26,30 +28,28 @@ class AnalysisType(str, Enum):
 
 async def safe_execute(coro, timeout=600):
     try:
-        print(f"⏳ Début de l'exécution (timeout: {timeout}s)...")
+        print(f"Début de l'exécution (timeout: {timeout}s)...")
         result = await asyncio.wait_for(coro, timeout=timeout)
-        print("✅ Exécution terminée.")
+        print("Exécution terminée.")
         return result
     except asyncio.TimeoutError:
-        print("⏰ Timeout atteint !")
+        print("Timeout atteint !")
         return {"status": "error", "message": "Timeout lors de l'exécution de la tâche."}
     except Exception as e:
-        print(f"❌ Erreur : {str(e)}")
+        print(f"Erreur : {str(e)}")
         return {"status": "error", "message": f"Erreur : {str(e)}"}
 
 def calculate_eco_score(carbon_data: dict, quality_data: dict = None) -> dict:
     """Calcule un score écologique global."""
-    score = 100  # Score de base
+    score = 100
 
-    # Pénalités carbone
     carbon_impact = carbon_data.get("carbon_impact", {})
     emissions = carbon_impact.get("emissions_kg", 0)
     complexity = carbon_data.get("complexity_analysis", {}).get("complexity_score", 0)
 
-    score -= min(emissions * 10000, 30)  # Max -30 pour carbone
-    score -= min(complexity * 2, 40)      # Max -40 pour complexité
+    score -= min(emissions * 10000, 30)
+    score -= min(complexity * 2, 40)
 
-    # Pénalités qualité
     if quality_data and "issues" in quality_data:
         critical_issues = sum(1 for issue in quality_data["issues"] if issue.get("severity") == "CRITICAL")
         major_issues = sum(1 for issue in quality_data["issues"] if issue.get("severity") == "MAJOR")
@@ -57,9 +57,8 @@ def calculate_eco_score(carbon_data: dict, quality_data: dict = None) -> dict:
         score -= critical_issues * 10
         score -= major_issues * 5
 
-    score = max(0, score)  # Minimum 0
+    score = max(0, score)
 
-    # Classification
     if score >= 80:
         grade = "A"
         label = "Excellent"
@@ -102,6 +101,43 @@ async def carbon_impact_analysis(
             "status": "error",
             "message": f"Erreur lors de l'analyse carbone : {str(e)}",
         }
+    
+# @mcp.tool(
+#     title="Métriques et insight de qlty",
+#     description="Renvoie des métriques de compléxité et commentaire des erreurs par ligne",
+# )
+# def qlty_metrics_analysis(
+#     github_owner: str = Field(description="owner du repo github à analyser"),
+#     github_project: str = Field(description="nom du repo github à analyser")
+# ):
+#     try:
+#     # if True:
+#         return qlty_metrics(github_owner, github_project)
+#     except Exception as e:
+#         return {
+#             "status": "error",
+#             "message": f"Erreur lors de l'analyse qlty : {str(e)}",
+#         }
+    
+@mcp.tool(
+    title="Calcul impact carbone code",
+    description="Mesure l'empreinte carbone et énergétique d'un code Python",
+)
+async def carbon_impact_analysis(
+    code: str = Field(description="Code Python à analyser"),
+    filename: str = Field(default="analysis.py", description="Nom du fichier"),
+) -> Dict:
+    try:
+        result = await safe_execute(analyze_carbon_impact(code, filename))
+        return {
+            "status": "success",
+            "data": result,
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "message": f"Erreur lors de l'analyse carbone : {str(e)}",
+        }
 
 @mcp.tool(
     title="Analyse complète écologique",
@@ -115,17 +151,17 @@ async def full_eco_analysis(
     try:
         print("🔍 Début de l'analyse carbone...")
         carbon_result = await safe_execute(analyze_carbon_impact(code, filename), timeout=600)
-        print("✅ Analyse carbone terminée.")
+        print("Analyse carbone terminée.")
 
         quality_result = {}
         if include_sonar:
-            print("🔍 Début de l'analyse SonarQube...")
+            print("Début de l'analyse SonarQube...")
             quality_result = await safe_execute(submit_code_safe(code, filename), timeout=600)
-            print("✅ Analyse SonarQube terminée.")
+            print("Analyse SonarQube terminée.")
 
-        print("📊 Calcul du score écologique...")
+        print("Calcul du score écologique...")
         eco_score = calculate_eco_score(carbon_result, quality_result)
-        print("✅ Score écologique calculé.")
+        print("Score écologique calculé.")
 
         return {
             "status": "success",
@@ -134,7 +170,7 @@ async def full_eco_analysis(
             "eco_score": eco_score,
         }
     except Exception as e:
-        print(f"❌ Erreur : {str(e)}")
+        print(f"Erreur : {str(e)}")
         return {
             "status": "error",
             "message": f"Erreur lors de l'analyse complète : {str(e)}",
@@ -148,13 +184,13 @@ async def github_carbon_analysis(repo_url):
     try:
         print(f"🔍 Début de l'analyse GitHub pour {repo_url}...")
         result = await safe_execute(analyze_github_carbon(repo_url), timeout=600)
-        print("✅ Analyse GitHub terminée.")
+        print("Analyse GitHub terminée.")
         return {
             "status": "success",
             "data": result,
         }
     except Exception as e:
-        print(f"❌ Erreur lors de l'analyse GitHub : {str(e)}")
+        print(f"Erreur lors de l'analyse GitHub : {str(e)}")
         return {
             "status": "error",
             "message": f"Erreur lors de l'analyse GitHub : {str(e)}",
@@ -181,6 +217,13 @@ async def run_sonarqube_analysis(
             "message": f"Erreur lors de l'analyse SonarQube : {str(e)}",
         }
 
+@mcp.tool(
+    title="Analyse repo github",
+    description="Analyse les utilisations de fonctions et de fichier dans un repo github python à partir d'un parametre repo_github correspondant au nom du repo. Renvoie le fichier le plus important à optimiser et des notes d'optimisations. Contient des données de complexité algorithmique.",
+)
+async def github_repo_analysis(repo_github:str):
+    res = all_together(repo_github)
+    return res
 
 async def test_carbon_impact():
     code = """
