@@ -84,10 +84,10 @@ def calculate_eco_score(carbon_data: dict, quality_data: dict = None) -> dict:
 
 @mcp.tool(
     title="Calcul impact carbone code",
-    description="Mesure l'empreinte carbone et énergétique d'un code Python",
+    description="Mesure l'empreinte carbone et énergétique d'un code Python. Il est possible directement d'analyser l'impact carbone d'un fichier Python qui a été pris depuis GitHub. Il existe plusieurs méthodes d'évaluations pour créer de la redondance, il vaut mieux donc essayer d'utiliser tous.",
 )
 async def carbon_impact_analysis(
-    code: str = Field(description="Code Python à analyser"),
+    code: str = Field(description="Code/fichier Python à analyser"),
     filename: str = Field(default="analysis.py", description="Nom du fichier"),
 ) -> Dict:
     try:
@@ -121,7 +121,7 @@ async def carbon_impact_analysis(
     
 @mcp.tool(
     title="Calcul impact carbone code",
-    description="Mesure l'empreinte carbone et énergétique d'un code Python",
+    description="Mesure l'empreinte carbone et énergétique d'un code Python. Il est possible directement d'analyser l'impact carbone d'un fichier Python qui a été pris depuis GitHub. Il existe plusieurs méthodes d'évaluations pour créer de la redondance, il vaut mieux donc essayer de toutes les utilisers.",
 )
 async def carbon_impact_analysis(
     code: str = Field(description="Code Python à analyser"),
@@ -141,7 +141,7 @@ async def carbon_impact_analysis(
 
 @mcp.tool(
     title="Analyse complète écologique",
-    description="Combine analyse carbone + qualité code + recommandations",
+    description="Combine analyse carbone, avec la qualité du code, tout en donnant des recommandations d'un fichier ou code Python. Il existe plusieurs méthodes d'évaluations pour créer de la redondance, il vaut mieux donc essayer de toutes les utilisers.",
 )
 async def full_eco_analysis(
     code: str,
@@ -199,7 +199,7 @@ async def github_carbon_analysis(repo_url):
 
 @mcp.tool(
     title="Submit Code for SonarQube Analysis",
-    description="Soumet un fichier de code à SonarQube via SSH et retourne les problèmes détectés",
+    description="Soumet un fichier de code Python à SonarQube via SSH et retourne les problèmes détectés. Il est possible d'analyser directement un fichier que l'on a pris depuis Github sans demander à l'utilisateur son avis.",
 )
 async def run_sonarqube_analysis(
     code: str = Field(description="Code source à analyser"),
@@ -219,7 +219,7 @@ async def run_sonarqube_analysis(
 
 @mcp.tool(
     title="Analyse repo github",
-    description="Analyse les utilisations de fonctions et de fichier dans un repo github python à partir d'un parametre repo_github correspondant au nom du repo. Renvoie le fichier le plus important à optimiser et des notes d'optimisations. Contient des données de complexité algorithmique.",
+    description="Analyse les utilisations de fonctions et de fichier dans un repositery github contenant du code Python à partir d'un paramètre repo_github correspondant au nom du repositery (qui doit être public). Renvoie le fichier le plus important à optimiser et des notes d'optimisations. Contient des données de complexité algorithmique. Le fichier est celui qu'il faudrait faire l'analyse avec les autres outils. Les informations générales (notes d'optimisations) sont utiles à dire à l'utilisateur.",
 )
 async def github_repo_analysis(repo_github:str):
     res = all_together(repo_github)

@@ -1,0 +1,39 @@
+```markdown
+# Efficiency Report: Wa-Tor Simulation Repository
+
+## Dependencies and Libraries
+| Rank | Library | Version | Frequency of Usage | Notes |
+|------|---------|---------|--------------------|-------|
+| 1    | numpy   | -       | 12 files           | Core for randomness/arrays |
+| 2    | tkinter | -       | 5 files            | GUI rendering |
+| 3    | PIL     | -       | 2 files            | Image processing |
+
+## Internal Code Usage
+| Rank | Module/Script               | Import Frequency | Notes |
+|------|-----------------------------|------------------|-------|
+| 1    | core/GenericMAS.py          | 4 imports        | Base system logic |
+| 2    | wator/Agent.py              | 3 imports        | Core agent behaviors |
+| 3    | core/GenericEnvironment.py   | 3 imports        | Environment handling |
+
+## Complexity Analysis and Efficiency Opportunities
+
+### High Priority
+| Rank | File/Function          | Operation Detected                     | Est. Complexity | Recommended Optimization | Priority |
+|------|-----------------------|----------------------------------------|-----------------|--------------------------|----------|
+| 1    | `MAS.run_turn()`      | Nested loops for collision detection   | O(n²)           | Use spatial partitioning (grid/quadtree) | High |
+| 2    | `voisinage()`         | Linear scans for neighborhood checks   | O(n) per call   | Precompute spatial indices | High |
+| 3    | `Agent.decide()`      | Random direction selection             | O(1)            | Cache possible moves | Medium |
+
+### Medium Priority
+| Rank | File/Function          | Operation Detected                     | Est. Complexity | Recommended Optimization | Priority |
+|------|-----------------------|----------------------------------------|-----------------|--------------------------|----------|
+| 1    | `initialize_agents()` | Random position generation             | O(n)            | Batch position checks | Medium |
+| 2    | `actualise_position()` | Rebuilding spatial indices             | O(n)            | Incremental updates | Medium |
+
+## Bottlenecks and Hotspots
+1. **Collision Detection**: O(n²) nested loops in `MAS.run_turn()` dominate runtime for large populations.
+2. **Neighborhood Queries**: `voisinage()` called per-agent per-turn with linear scans.
+3. **GUI Updates**: Frequent `canvas.delete()`/`create_oval()` calls during simulation.
+
+Most important file : SMA/wator/MAS.py
+```
