@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 mistral_api_key = os.getenv("MISTRAL_API_KEY")
+# oui
 
 
 analyse_prompt = lambda all_codes:f"""Here are the codes of a repositery : 
