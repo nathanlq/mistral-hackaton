@@ -87,7 +87,7 @@ The prompt is :
 def clone_repo(repo):
     prefix = "https://github.com/"
     if prefix not in repo:
-        repo = prefix + repo
+        repo = prefix + repo.replace("github.com/", "")
     if repo[-1] == "/":
         repo = repo[:-1]
     try:
