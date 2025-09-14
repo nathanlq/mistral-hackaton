@@ -219,7 +219,7 @@ async def run_sonarqube_analysis(
 
 @mcp.tool(
     title="Analyse repo github",
-    description="Analyse les utilisations de fonctions et de fichier dans un repositery github contenant du code Python à partir d'un paramètre repo_github correspondant au nom du repositery (qui doit être public). Renvoie le fichier le plus important à optimiser et des notes d'optimisations. Contient des données de complexité algorithmique. Le fichier est celui qu'il faudrait faire l'analyse avec les autres outils. Les informations générales (notes d'optimisations) sont utiles à dire à l'utilisateur.",
+    description="Analyse les utilisations de fonctions et de fichier dans un repositery github contenant du code Python à partir d'un paramètre repo_github correspondant à l'url complet du repositery (qui doit être public). Si l'utilisateur ne donne qu'une partie de l'url, remplie la. Renvoie le fichier le plus important à optimiser et des notes d'optimisations. Contient des données de complexité algorithmique. Le fichier est celui qu'il faudrait faire l'analyse avec les autres outils. Les informations générales (notes d'optimisations) sont utiles à dire à l'utilisateur.",
 )
 async def github_repo_analysis(repo_github:str):
     res = all_together(repo_github)
