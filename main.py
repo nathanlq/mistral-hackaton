@@ -176,25 +176,25 @@ async def full_eco_analysis(
             "message": f"Erreur lors de l'analyse complète : {str(e)}",
         }
 
-@mcp.tool(
-    title="Analyse impact carbone GitHub",
-    description="Analyse l'impact carbone des fichiers Python d'un repo GitHub",
-)
-async def github_carbon_analysis(repo_url):
-    try:
-        print(f"🔍 Début de l'analyse GitHub pour {repo_url}...")
-        result = await safe_execute(analyze_github_carbon(repo_url), timeout=600)
-        print("Analyse GitHub terminée.")
-        return {
-            "status": "success",
-            "data": result,
-        }
-    except Exception as e:
-        print(f"Erreur lors de l'analyse GitHub : {str(e)}")
-        return {
-            "status": "error",
-            "message": f"Erreur lors de l'analyse GitHub : {str(e)}",
-        }
+# @mcp.tool(
+#     title="Analyse impact carbone GitHub",
+#     description="Analyse l'impact carbone des fichiers Python d'un repo GitHub",
+# )
+# async def github_carbon_analysis(repo_url):
+#     try:
+#         print(f"🔍 Début de l'analyse GitHub pour {repo_url}...")
+#         result = await safe_execute(analyze_github_carbon(repo_url), timeout=600)
+#         print("Analyse GitHub terminée.")
+#         return {
+#             "status": "success",
+#             "data": result,
+#         }
+#     except Exception as e:
+#         print(f"Erreur lors de l'analyse GitHub : {str(e)}")
+#         return {
+#             "status": "error",
+#             "message": f"Erreur lors de l'analyse GitHub : {str(e)}",
+#         }
 
 
 @mcp.tool(
